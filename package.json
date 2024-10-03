@@ -1,0 +1,27 @@
+{
+  "name": "demo.sub",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^6.1.2",
+    "@mui/material": "^6.1.2",
+    "axios": "^1.7.7",
+    "preact": "^10.23.1",
+    "react-dom": "^18.3.1",
+    "react-dropzone": "^14.2.9",
+    "react-spinners": "^0.14.1"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.0",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.1"
+  }
+}
