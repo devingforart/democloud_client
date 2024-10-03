@@ -3,6 +3,7 @@ import { Modal, Box, TextField, Button, CircularProgress } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import { ClipLoader } from 'react-spinners';
 import axios from 'axios';
+import UploadedTracks from './UploadedTracks';
 
 const style = {
   position: 'absolute',
@@ -123,16 +124,9 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
       )}
 
       <div style={{ marginTop: '20px' }}>
-        <h3>Uploaded Tracks</h3>
+
         <ul>
-          {uploadedTracks.map((track, index) => (
-            <li key={`${track.file_url}-${index}`}>
-              {track.trackName}{' '}
-              <Button variant="outlined" color="secondary" onClick={() => deleteTrack(track.file_url)}>
-                Delete
-              </Button>
-            </li>
-          ))}
+          <UploadedTracks />
         </ul>
       </div>
     </div>
