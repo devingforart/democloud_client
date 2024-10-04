@@ -188,7 +188,7 @@ const UploadedTracks = () => {
         autoHideDuration={3000}
         onClose={() => setOpenSnackbar(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        TransitionComponent={(props) => <Slide {...props} direction="down" />}
+        TransitionComponent={(props: any) => <Slide {...props} direction="down" />}
       >
         <Alert
           onClose={() => setOpenSnackbar(false)}
@@ -204,14 +204,14 @@ const UploadedTracks = () => {
       <ul style={styles.trackList}>
         {uploadedTracks.slice(0, loadedTracks).map((track, index) => (
           <li key={`${track.file_url}-${index}`} style={styles.trackItem}>
-            <div style={styles.trackHeader}>
+            <div>
               <Typography variant="h6" style={styles.trackName}>
                 <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>{track.trackName}</Link>
               </Typography>
               <Tooltip title="Copy private link">
 
                 <IconButton onClick={() => copyToClipboard(track.demo_id)} style={styles.copyButton}>
-                  <Typography style={{ fontSize: '12px', marginRight:'5px' }}>
+                  <Typography style={{ fontSize: '12px', marginRight: '5px' }}>
                     Copy Share Link
                   </Typography>
                   <ContentCopy fontSize="small" />
