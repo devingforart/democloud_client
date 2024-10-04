@@ -18,11 +18,11 @@ const DemoPage = () => {
   useEffect(() => {
     const fetchDemoDetails = async () => {
       try {
-        const response = await axios.get(`https://test.devingfor.art:8080/demo_details/${demo_id}`);
+        const response = await axios.get(`https://devingfor.art:8080/demo_details/${demo_id}`);
         setTrack({
           artist: response.data.artist,
           title: response.data.title,
-          file_url: `https://test.devingfor.art:8080${response.data.file_url}`,
+          file_url: `https://devingfor.art:8080${response.data.file_url}`,
         });
       } catch (error) {
         console.error('Error fetching demo details:', error);

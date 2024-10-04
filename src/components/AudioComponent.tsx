@@ -41,11 +41,11 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
     if (demo_id) {
       const fetchDemoDetails = async () => {
         try {
-          const response = await axios.get(`https://test.devingfor.art:8080/demo_details/${demo_id}`);
+          const response = await axios.get(`https://devingfor.art:8080/demo_details/${demo_id}`);
           const track = response.data;
           setTitle(track.title);
           setArtist(track.artist);
-          setAudioUrl(`https://test.devingfor.art:8080${track.file_url}`);
+          setAudioUrl(`https://devingfor.art:8080${track.file_url}`);
           setDemoUrl(`${window.location.origin}/demo/${demo_id}`);
         } catch (error) {
           console.error('Error fetching demo details:', error);
@@ -82,7 +82,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
       // Enviar el archivo al backend con el encabezado `user_id`
       const response = await axios.post(
-        `https://test.devingfor.art:8080/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
+        `https://devingfor.art:8080/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
           headers: {
@@ -97,7 +97,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
       setDemoUrl(demoUrl);
       setUploadStatus('File uploaded successfully!');
-      setAudioUrl(`https://test.devingfor.art:8080${response.data.file_url}`);
+      setAudioUrl(`https://devingfor.art:8080${response.data.file_url}`);
 
       // Redirigir a la página con el demo_id en la URL
       navigate(`/demo/${demoId}`);
