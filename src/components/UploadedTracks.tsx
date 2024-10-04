@@ -28,7 +28,7 @@ const UploadedTracks = () => {
       try {
         if (user) {
           const user_id = user.sub;
-          const response = await axios.get('http://localhost:8080/tracks', {
+          const response = await axios.get('https://devingfor.art/tracks', {
             headers: { user_id, 'Content-Type': 'application/json' },
           });
 
@@ -67,7 +67,7 @@ const UploadedTracks = () => {
           normalize: true,
         });
 
-        wavesurferRefs.current[index]?.load(`http://localhost:8080${track.file_url}`);
+        wavesurferRefs.current[index]?.load(`https://devingfor.art${track.file_url}`);
 
         wavesurferRefs.current[index]?.on('ready', () => {
           const trackDuration = wavesurferRefs.current[index]?.getDuration() || 0;
@@ -164,7 +164,7 @@ const UploadedTracks = () => {
     if (trackToDelete) {
       try {
         const filename = trackToDelete.split('/').pop();
-        await axios.delete(`http://localhost:8080/audio/${filename}`);
+        await axios.delete(`https://devingfor.art/audio/${filename}`);
         setUploadedTracks((prev) => prev.filter((track) => track.file_url !== trackToDelete));
       } catch (error) {
         console.error('Error deleting the file:', error);
