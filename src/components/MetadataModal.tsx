@@ -38,7 +38,7 @@ const MetadataModal = ({ open, onClose }) => {
 
     setLoading(true);
     try {
-      await axios.post(`http://localhost:8080/upload?artist=${artist}&title=${title}`, formData, {
+      await axios.post(`http://test.devingfor.art:8080/upload?artist=${artist}&title=${title}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       // Handle successful upload
