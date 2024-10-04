@@ -85,10 +85,8 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         `https://devingfor.art/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'user_id': user_id // Incluir el user_id en los encabezados
-          },
+          headers: { 'X-User-Id': user.sub, 'Content-Type': 'application/json' },
+
         }
       );
 
