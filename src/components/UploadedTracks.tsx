@@ -30,6 +30,7 @@ const UploadedTracks = () => {
           const user_id = user.sub;
           const response = await axios.get('https://devingfor.art/tracks', {
             headers: { user_id, 'Content-Type': 'application/json' },
+            withCredentials: true  // Asegúrate de incluir esto si el servidor lo requiere
           });
 
           setUploadedTracks(response.data.map((track: any) => ({

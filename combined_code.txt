@@ -1,15 +1,18 @@
 C:/Users/southAToms/Desktop/SA_demoSub/demoSub_client/src/components\AppBarComponent.tsx
 
 Contenido:
-import { AppBar, Toolbar, Button } from '@mui/material';
+import { AppBar, Toolbar, Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import './AppBar.css';
+import { useAuth0 } from '@auth0/auth0-react';
 
 interface AppBarComponentProps {
   onUploadClick: () => void;
 }
 
 export const AppBarComponent = ({ onUploadClick }: AppBarComponentProps) => {
+  const { user, logout } = useAuth0(); // Obtener el objeto `user` de Auth0
+
   return (
     <AppBar position="fixed" color="primary">
       <Toolbar>
@@ -17,13 +20,27 @@ export const AppBarComponent = ({ onUploadClick }: AppBarComponentProps) => {
           <Button color="inherit" component={Link} to="/">
             Inicio
           </Button>
-          <Button color="inherit" component={Link} to="/my-tracks">
-            Mis Tracks
+
+          {user && <>
+            <Button color="inherit" component={Link} to="/my-tracks">
+              Mis Tracks
+            </Button>
+
+            <Button color="inherit" onClick={onUploadClick}>
+              Subir
+            </Button>
+          </>
+          }
+
+
+          <Button
+            color="inherit"
+            onClick={() => logout({ returnTo: window.location.origin })} // Cerrar sesión
+            style={{ marginLeft: 'auto' }} // Alineación a la derecha
+          >
+            Cerrar Sesión
           </Button>
-          {/* Botón para abrir el modal de subida */}
-          <Button color="inherit" onClick={onUploadClick}>
-            Subir
-          </Button>
+
         </div>
       </Toolbar>
     </AppBar>
@@ -43,7 +60,6 @@ import { useDropzone } from 'react-dropzone';
 import { ClipLoader } from 'react-spinners';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import UploadedTracks from './UploadedTracks';
 
 const style = {
   position: 'absolute',
@@ -124,7 +140,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         `https://devingfor.art/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
-          headers: { 
+          headers: {
             'Content-Type': 'multipart/form-data',
             'user_id': user_id // Incluir el user_id en los encabezados
           },
@@ -170,24 +186,9 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         </Box>
       </Modal>
 
-      {uploadStatus && <p>{uploadStatus}</p>}
-      {audioUrl && (
-        <div>
-          <h3>Audio Preview:</h3>
-          <audio controls>
-            <source src={audioUrl} type="audio/mpeg" />
-          </audio>
-        </div>
-      )}
 
-      {demoUrl && (
-        <div>
-          <h3>Share this link to listen to the demo:</h3>
-          <a href={demoUrl} target="_blank" rel="noopener noreferrer">{demoUrl}</a>
-        </div>
-      )}
 
-      <UploadedTracks />
+
     </div>
   );
 };
@@ -253,15 +254,11 @@ export const AuthenticatedLandingPage = () => {
 // Estilos para la página de usuarios autenticados
 const styles = {
   container: {
-    backgroundColor: '#f5f5f5',
-    height: '100vh',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
     textAlign: 'center',
-    padding: '40px 20px',
-    background: 'linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%)',
   },
   hero: {
     marginTop: '50px',
@@ -628,7 +625,7 @@ const MetadataModal = ({ open, onClose }) => {
 
     setLoading(true);
     try {
-      await axios.post(`https://devingfor.art/upload?artist=${artist}&title=${title}`, formData, {
+      await axios.post(`http://test.devingfor.art:8080/upload?artist=${artist}&title=${title}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       // Handle successful upload
@@ -668,49 +665,43 @@ C:/Users/southAToms/Desktop/SA_demoSub/demoSub_client/src/components\UploadedTra
 Contenido:
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from '@mui/material';
-import { PlayArrow, Pause, Stop, Delete, ContentCopy } from '@mui/icons-material';
+import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Snackbar, Slide } from '@mui/material';
+import { PlayArrow, Pause, Stop, Delete, ContentCopy, CheckCircleOutline } from '@mui/icons-material';
 import WaveSurfer from 'wavesurfer.js';
-import { useAuth0 } from "@auth0/auth0-react";  // Asegúrate de importar Auth0
+import { useAuth0 } from "@auth0/auth0-react";
 import { Link } from 'react-router-dom';
+import { Alert } from '@mui/material';
 
 const UploadedTracks = () => {
   const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string, demo_id: string }[]>([]);
   const [loadedTracks, setLoadedTracks] = useState<number>(5); // Número máximo de pistas a cargar inicialmente
-  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null); // Índice de la pista actual
-  const [isPlaying, setIsPlaying] = useState<boolean[]>([]); // Array de estados de reproducción por pista
-  const [currentTime, setCurrentTime] = useState<number[]>([]); // Array de tiempos de reproducción por pista
-  const [duration, setDuration] = useState<number[]>([]); // Array de duraciones por pista
-  const [openDialog, setOpenDialog] = useState<boolean>(false); // Estado del diálogo de eliminación
-  const [trackToDelete, setTrackToDelete] = useState<string | null>(null); // Pista a eliminar
-  const { user } = useAuth0();  // Obtiene el usuario desde el contexto de Auth0
+  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean[]>([]);
+  const [currentTime, setCurrentTime] = useState<number[]>([]);
+  const [duration, setDuration] = useState<number[]>([]);
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const { user } = useAuth0();
 
-  const waveformRefs = useRef<(HTMLDivElement | null)[]>([]); // Array de refs para cada pista
-  const wavesurferRefs = useRef<(WaveSurfer | null)[]>([]); // Array de WaveSurfers para cada pista
+  const waveformRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const wavesurferRefs = useRef<(WaveSurfer | null)[]>([]);
 
+  // Cargar las pistas del servidor
   useEffect(() => {
     const fetchTracks = async () => {
       try {
         if (user) {
           const user_id = user.sub;
-
           const response = await axios.get('https://devingfor.art/tracks', {
-            headers: {
-              user_id: user_id,
-              'Content-Type': 'application/json',
-            },
+            headers: { user_id, 'Content-Type': 'application/json' },
           });
 
-          setUploadedTracks((prevTracks) => {
-            if (prevTracks.length === 0) {
-              return response.data.map((track: any) => ({
-                file_url: track.file_url,
-                trackName: `${track.artist} - ${track.title}`,
-                demo_id: track.demo_id,
-              }));
-            }
-            return prevTracks; // No actualizar si ya hay pistas cargadas
-          });
+          setUploadedTracks(response.data.map((track: any) => ({
+            file_url: track.file_url,
+            trackName: `${track.artist} - ${track.title}`,
+            demo_id: track.demo_id,
+          })));
 
           setIsPlaying(new Array(response.data.length).fill(false));
           setCurrentTime(new Array(response.data.length).fill(0));
@@ -720,22 +711,22 @@ const UploadedTracks = () => {
         console.error('Error fetching tracks:', error);
       }
     };
+    fetchTracks();
+  }, [user]);
 
-    // Asegurarse de que se ejecute solo una vez
-    if (uploadedTracks.length === 0) {
-      fetchTracks();
-    }
-  }, [user, uploadedTracks.length]); // Solo se ejecuta cuando `user` cambia y la longitud es cero
-
-
+  // Inicializar WaveSurfer y evitar duplicados
   useEffect(() => {
     uploadedTracks.slice(0, loadedTracks).forEach((track, index) => {
+      if (waveformRefs.current[index] && wavesurferRefs.current[index]) {
+        wavesurferRefs.current[index]?.destroy();
+        wavesurferRefs.current[index] = null;
+      }
+
       if (waveformRefs.current[index] && !wavesurferRefs.current[index]) {
-        // Crear un nuevo objeto WaveSurfer para cada pista
         wavesurferRefs.current[index] = WaveSurfer.create({
           container: waveformRefs.current[index],
-          waveColor: '#4A90E2', // Color de la onda
-          progressColor: '#50E3C2', // Color del progreso
+          waveColor: '#4A90E2',
+          progressColor: '#50E3C2',
           height: 80,
           barWidth: 2,
           normalize: true,
@@ -771,6 +762,13 @@ const UploadedTracks = () => {
       }
     });
   }, [uploadedTracks, loadedTracks]);
+
+  // Eliminar instancias al desmontar
+  useEffect(() => {
+    return () => {
+      wavesurferRefs.current.forEach((wave) => wave?.destroy());
+    };
+  }, []);
 
   const togglePlayPause = (index: number) => {
     if (wavesurferRefs.current[index]) {
@@ -821,7 +819,6 @@ const UploadedTracks = () => {
     setTrackToDelete(file_url);
     setOpenDialog(true);
   };
-  console.log('Uploaded Tracks:', uploadedTracks);
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -841,28 +838,47 @@ const UploadedTracks = () => {
       }
     }
   };
+
   const copyToClipboard = (demo_id: string) => {
     const privateLink = `${window.location.origin}/demo/${demo_id}`;
     navigator.clipboard.writeText(privateLink);
-    alert('Link copied to clipboard!');
+    setOpenSnackbar(false);
+    setTimeout(() => setOpenSnackbar(true), 100);
   };
 
   return (
     <div style={styles.container}>
-      <h3 style={styles.title}>Tracks by South Atoms</h3>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        TransitionComponent={(props: any) => <Slide {...props} direction="down" />}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity="success"
+          icon={<CheckCircleOutline fontSize="inherit" />}
+          sx={{ backgroundColor: '#4caf50', color: '#ffffff', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+        >
+          🎉 Link copied successfully!
+        </Alert>
+      </Snackbar>
+
+      <h3 style={styles.title}>Tracks by {user?.name}</h3>
       <ul style={styles.trackList}>
         {uploadedTracks.slice(0, loadedTracks).map((track, index) => (
           <li key={`${track.file_url}-${index}`} style={styles.trackItem}>
-            <div style={styles.trackHeader}>
-              {/* Título del track */}
+            <div>
               <Typography variant="h6" style={styles.trackName}>
-                <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>
-                  {track.trackName}
-                </Link>
+                <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>{track.trackName}</Link>
               </Typography>
-              {/* Botón para copiar el link privado */}
               <Tooltip title="Copy private link">
+
                 <IconButton onClick={() => copyToClipboard(track.demo_id)} style={styles.copyButton}>
+                  <Typography style={{ fontSize: '12px', marginRight: '5px' }}>
+                    Copy Share Link
+                  </Typography>
                   <ContentCopy fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -879,13 +895,7 @@ const UploadedTracks = () => {
                 {Math.floor(currentTime[index])}s / {Math.floor(duration[index])}s
               </Typography>
             </div>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => handleOpenDeleteDialog(track.file_url)}
-              startIcon={<Delete />}
-              style={styles.deleteButton}
-            >
+            <Button variant="outlined" color="error" onClick={() => handleOpenDeleteDialog(track.file_url)} startIcon={<Delete />} style={styles.deleteButton}>
               Delete
             </Button>
           </li>
@@ -916,10 +926,9 @@ const UploadedTracks = () => {
   );
 };
 
-// Estilos para la UI
 const styles = {
   container: {
-    backgroundColor: '#F5F7FA', // Fondo claro
+    backgroundColor: '#F5F7FA',
     padding: '20px',
     borderRadius: '8px',
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
@@ -941,7 +950,7 @@ const styles = {
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
   },
   trackName: {
-    color: '#4A90E2', // Azul vibrante
+    color: '#4A90E2',
   },
   waveformContainer: {
     marginBottom: '10px',
@@ -951,10 +960,10 @@ const styles = {
     alignItems: 'center',
   },
   playPauseButton: {
-    color: '#50E3C2', // Color del progreso
+    color: '#50E3C2',
   },
   stopButton: {
-    color: '#D0021B', // Rojo para el botón de stop
+    color: '#D0021B',
   },
   timeInfo: {
     marginLeft: '10px',
@@ -969,6 +978,9 @@ const styles = {
     backgroundColor: '#4A90E2',
     color: '#FFF',
   },
+  copyButton: {
+    borderRadius: '10px',
+  }
 };
 
 export default UploadedTracks;
@@ -999,11 +1011,9 @@ const App = () => {
 
   return (
     <div>
-      {/* Barra de navegación */}
-      <AppBarComponent onUploadClick={handleOpenModal} />
-
-      {/* Definición de rutas */}
-      <div style={{ marginTop: '70px' }}>
+      {isAuthenticated && <AppBarComponent onUploadClick={handleOpenModal} />
+      }
+      <div style={isAuthenticated ? { marginTop: '70px' } : { marginTop: '-10px' }}>
         <Routes>
           {/* Mostrar la nueva landing page para usuarios autenticados */}
           <Route
@@ -1017,8 +1027,8 @@ const App = () => {
             }
           />
           {/* Solo se renderiza una vez */}
-          <Route path="/my-tracks" element={<UploadedTracks />} /> {/* Mis Tracks */}
-          <Route path="/demo/:demo_id" element={<DemoPage />} /> {/* Demo Individual */}
+          <Route path="/my-tracks" element={<>  <AppBarComponent onUploadClick={handleOpenModal} /> <UploadedTracks /> </>} />
+          <Route path="/demo/:demo_id" element={<DemoPage />} />
         </Routes>
       </div>
 
