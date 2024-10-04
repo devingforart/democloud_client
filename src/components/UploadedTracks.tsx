@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Snackbar, Slide } from '@mui/material';
 import { PlayArrow, Pause, Stop, Delete, ContentCopy, CheckCircleOutline } from '@mui/icons-material';
 import WaveSurfer from 'wavesurfer.js';
-import { useAuth0 } from "@auth0/auth0-react";  
+import { useAuth0 } from "@auth0/auth0-react";
 import { Link } from 'react-router-dom';
 import { Alert } from '@mui/material';
 
@@ -209,7 +209,11 @@ const UploadedTracks = () => {
                 <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>{track.trackName}</Link>
               </Typography>
               <Tooltip title="Copy private link">
+
                 <IconButton onClick={() => copyToClipboard(track.demo_id)} style={styles.copyButton}>
+                  <Typography style={{ fontSize: '12px', marginRight:'5px' }}>
+                    Copy Share Link
+                  </Typography>
                   <ContentCopy fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -309,6 +313,9 @@ const styles = {
     backgroundColor: '#4A90E2',
     color: '#FFF',
   },
+  copyButton: {
+    borderRadius: '10px',
+  }
 };
 
 export default UploadedTracks;
