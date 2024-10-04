@@ -4,6 +4,7 @@ import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, D
 import { PlayArrow, Pause, Stop, Delete } from '@mui/icons-material';
 import WaveSurfer from 'wavesurfer.js';
 import { useAuth0 } from "@auth0/auth0-react";  // Asegúrate de importar Auth0
+import { Link } from 'react-router-dom';
 
 const UploadedTracks = () => {
   const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string, demo_id: string }[]>([]);
@@ -173,9 +174,9 @@ const UploadedTracks = () => {
 
           <li key={`${track.file_url}-${index}`} style={styles.trackItem}>
             <Typography variant="h6" style={styles.trackName}>
-              <a href={`http://localhost:8080/demo/${track.demo_id}`} target="_blank" rel="noopener noreferrer">
+              <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>
                 {track.trackName}
-              </a>
+              </Link>
             </Typography>
             <div ref={(el) => (waveformRefs.current[index] = el)} style={styles.waveformContainer} />
             <div style={styles.controls}>
