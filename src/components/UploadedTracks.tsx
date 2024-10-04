@@ -5,7 +5,7 @@ import { PlayArrow, Pause, Stop, Delete } from '@mui/icons-material';
 import WaveSurfer from 'wavesurfer.js';
 
 const UploadedTracks = () => {
-  const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string }[]>([]);
+  const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string, demo_id: string }[]>([]);
   const [loadedTracks, setLoadedTracks] = useState<number>(5); // Número máximo de pistas a cargar inicialmente
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null); // Índice de la pista actual
   const [isPlaying, setIsPlaying] = useState<boolean[]>([]); // Array de estados de reproducción por pista
@@ -21,9 +21,11 @@ const UploadedTracks = () => {
     const fetchTracks = async () => {
       try {
         const response = await axios.get('http://localhost:8080/tracks');
+        console.log('RESPONMSE', response)
         setUploadedTracks(response.data.map((track: any) => ({
           file_url: track.file_url,
           trackName: `${track.artist} - ${track.title}`,
+          demo_id: track.demo_id // Asegúrate de recibir el demo_id
         })));
         // Inicializar estados para cada pista
         setIsPlaying(new Array(response.data.length).fill(false));
@@ -46,7 +48,6 @@ const UploadedTracks = () => {
           waveColor: '#4A90E2', // Color de la onda
           progressColor: '#50E3C2', // Color del progreso
           height: 80,
-          responsive: true,
           barWidth: 2,
           normalize: true,
         });
@@ -131,6 +132,7 @@ const UploadedTracks = () => {
     setTrackToDelete(file_url);
     setOpenDialog(true);
   };
+  console.log('Uploaded Tracks:', uploadedTracks);
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -153,11 +155,16 @@ const UploadedTracks = () => {
 
   return (
     <div style={styles.container}>
-      <h3 style={styles.title}>My Tracks</h3>
+      <h3 style={styles.title}>Tracks by South Atoms</h3>
       <ul style={styles.trackList}>
         {uploadedTracks.slice(0, loadedTracks).map((track, index) => (
+
           <li key={`${track.file_url}-${index}`} style={styles.trackItem}>
-            <Typography variant="h6" style={styles.trackName}>{track.trackName}</Typography>
+            <Typography variant="h6" style={styles.trackName}>
+              <a href={`http://localhost:8080/demo/${track.demo_id}`} target="_blank" rel="noopener noreferrer">
+                {track.trackName}
+              </a>
+            </Typography>
             <div ref={(el) => (waveformRefs.current[index] = el)} style={styles.waveformContainer} />
             <div style={styles.controls}>
               <IconButton onClick={() => togglePlayPause(index)} style={styles.playPauseButton}>

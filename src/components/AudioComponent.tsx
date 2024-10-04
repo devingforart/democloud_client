@@ -3,6 +3,7 @@ import { Modal, Box, TextField, Button, CircularProgress } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import { ClipLoader } from 'react-spinners';
 import axios from 'axios';
+import { useParams, useNavigate } from 'react-router-dom';
 import UploadedTracks from './UploadedTracks';
 
 const style = {
@@ -29,24 +30,31 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
   const [artist, setArtist] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
-  const [audioUrl, setAudioUrl] = useState<string>('');
-  const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string }[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string>(''); // URL del archivo subido
+  const [demoUrl, setDemoUrl] = useState<string>(''); // URL única para compartir
+  const { demo_id } = useParams<{ demo_id: string }>(); // Obtener demo_id de la URL
+  const navigate = useNavigate(); // Usa useNavigate en lugar de history
 
   useEffect(() => {
-    const fetchTracks = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/tracks');
-        setUploadedTracks(response.data.map((track: any) => ({
-          file_url: track.file_url,
-          trackName: `${track.artist} - ${track.title}`,
-        })));
-      } catch (error) {
-        console.error('Error fetching tracks:', error);
-      }
-    };
+    // Si hay un demo_id en la URL, recuperar los detalles del demo desde el backend
+    if (demo_id) {
+      const fetchDemoDetails = async () => {
+        try {
+          const response = await axios.get(`http://localhost:8080/demo_details/${demo_id}`);
+          const track = response.data;
+          setTitle(track.title);
+          setArtist(track.artist);
+          setAudioUrl(`http://localhost:8080${track.file_url}`);
+          setDemoUrl(`${window.location.origin}/demo/${demo_id}`);
+        } catch (error) {
+          console.error('Error fetching demo details:', error);
+        }
+      };
 
-    fetchTracks();
-  }, []);
+      fetchDemoDetails();
+    }
+  }, [demo_id]);
+
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: { 'audio/*': [] },
@@ -66,29 +74,31 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
     setLoading(true);
     try {
-      const response = await axios.post(`http://localhost:8080/upload?artist=${artist}&title=${title}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Enviar el archivo al backend
+      const response = await axios.post(
+        `http://localhost:8080/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
 
+      // Obtener el demoId devuelto por el backend
+      const demoId = response.data.demo_id;
+      const demoUrl = `${window.location.origin}/demo/${demoId}`; // Generamos el enlace único
+
+      setDemoUrl(demoUrl); // Almacenar el enlace del demo
       setUploadStatus('File uploaded successfully!');
-      setAudioUrl(`http://localhost:8080${response.data.file_url}`);
-      setUploadedTracks((prev) => [...prev, { file_url: response.data.file_url, trackName: `${artist} - ${title}` }]);
+      setAudioUrl(`http://localhost:8080${response.data.file_url}`); // Mostrar la previsualización del archivo
+
+      // Redirigir a la página con el demo_id en la URL
+      navigate(`/demo/${demoId}`);
     } catch (error) {
       console.error('Error uploading the file:', error);
-      setUploadStatus('File upload failed. Try again.');
+      setUploadStatus('File upload failed. Please check the server logs.');
     } finally {
       setLoading(false);
       handleCloseModal();
-    }
-  };
-
-  const deleteTrack = async (file_url: string) => {
-    try {
-      const filename = file_url.split('/').pop();
-      await axios.delete(`http://localhost:8080/audio/${filename}`);
-      setUploadedTracks((prev) => prev.filter((track) => track.file_url !== file_url));
-    } catch (error) {
-      console.error('Error deleting the file:', error);
     }
   };
 
@@ -123,12 +133,14 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         </div>
       )}
 
-      <div style={{ marginTop: '20px' }}>
+      {demoUrl && (
+        <div>
+          <h3>Share this link to listen to the demo:</h3>
+          <a href={demoUrl} target="_blank" rel="noopener noreferrer">{demoUrl}</a>
+        </div>
+      )}
 
-        <ul>
-          <UploadedTracks />
-        </ul>
-      </div>
+      <UploadedTracks />
     </div>
   );
 };
