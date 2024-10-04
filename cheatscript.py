@@ -2,15 +2,14 @@ import os
 
 # Lista de directorios
 directories = [
-  'C:/Users/southAToms/Desktop/develop/SAS_ORGANA/Organa/src/components/Calendar.tsx',
-  #'C:/Users/southAToms/Desktop/develop/SAS_ORGANA/Organa/src-tauri/src'
+    'C:/Users/southAToms/Desktop/SA_demoSub/demoSub_client/src/components',
+    # 'C:/Users/southAToms/Desktop/develop/SAS_ORGANA/Organa/src-tauri/src'
 ]
 
 # Lista de archivos individuales
 individual_files = [
-  #'C:/Users/southAToms/Desktop/develop/SAS_ORGANA/Organa/src-tauri/src/main.rs',
-  'C:/Users/southAToms/Desktop/develop/SAS_ORGANA/Organa/src-tauri/src/calendar.rs'
-
+    # 'C:/Users/southAToms/Desktop/develop/SAS_ORGANA/Organa/src-tauri/src/main.rs',
+    'C:/Users/southAToms/Desktop/SA_demoSub/demoSub_client/src/App.tsx'
 ]
 
 # Define las extensiones de archivos que te interesan
@@ -29,7 +28,8 @@ def combine_file(file_path, outfile):
         outfile.write(f'Contenido:\n{content}\n\n{"-"*80}\n\n')
 
 def search_and_combine_files(directories, individual_files, output_file):
-    with open(output_file, 'w') as outfile:
+    # Cambiar la codificación aquí a utf-8
+    with open(output_file, 'w', encoding='utf-8') as outfile:
         # Combinar archivos desde directorios
         for directory in directories:
             for root, dirs, files in os.walk(directory):

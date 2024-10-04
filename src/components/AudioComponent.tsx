@@ -5,7 +5,6 @@ import { useDropzone } from 'react-dropzone';
 import { ClipLoader } from 'react-spinners';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import UploadedTracks from './UploadedTracks';
 
 const style = {
   position: 'absolute',
@@ -86,7 +85,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         `http://localhost:8080/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
-          headers: { 
+          headers: {
             'Content-Type': 'multipart/form-data',
             'user_id': user_id // Incluir el user_id en los encabezados
           },
@@ -132,24 +131,9 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         </Box>
       </Modal>
 
-      {uploadStatus && <p>{uploadStatus}</p>}
-      {audioUrl && (
-        <div>
-          <h3>Audio Preview:</h3>
-          <audio controls>
-            <source src={audioUrl} type="audio/mpeg" />
-          </audio>
-        </div>
-      )}
 
-      {demoUrl && (
-        <div>
-          <h3>Share this link to listen to the demo:</h3>
-          <a href={demoUrl} target="_blank" rel="noopener noreferrer">{demoUrl}</a>
-        </div>
-      )}
 
-      <UploadedTracks />
+
     </div>
   );
 };

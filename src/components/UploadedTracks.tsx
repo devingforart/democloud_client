@@ -1,43 +1,41 @@
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
-import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import { PlayArrow, Pause, Stop, Delete } from '@mui/icons-material';
+import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Snackbar, Slide } from '@mui/material';
+import { PlayArrow, Pause, Stop, Delete, ContentCopy, CheckCircleOutline } from '@mui/icons-material';
 import WaveSurfer from 'wavesurfer.js';
-import { useAuth0 } from "@auth0/auth0-react";  // Asegúrate de importar Auth0
+import { useAuth0 } from "@auth0/auth0-react";  
 import { Link } from 'react-router-dom';
+import { Alert } from '@mui/material';
 
 const UploadedTracks = () => {
   const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string, demo_id: string }[]>([]);
   const [loadedTracks, setLoadedTracks] = useState<number>(5); // Número máximo de pistas a cargar inicialmente
-  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null); // Índice de la pista actual
-  const [isPlaying, setIsPlaying] = useState<boolean[]>([]); // Array de estados de reproducción por pista
-  const [currentTime, setCurrentTime] = useState<number[]>([]); // Array de tiempos de reproducción por pista
-  const [duration, setDuration] = useState<number[]>([]); // Array de duraciones por pista
-  const [openDialog, setOpenDialog] = useState<boolean>(false); // Estado del diálogo de eliminación
-  const [trackToDelete, setTrackToDelete] = useState<string | null>(null); // Pista a eliminar
-  const { user } = useAuth0();  // Obtiene el usuario desde el contexto de Auth0
+  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean[]>([]);
+  const [currentTime, setCurrentTime] = useState<number[]>([]);
+  const [duration, setDuration] = useState<number[]>([]);
+  const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const { user } = useAuth0();
 
-  const waveformRefs = useRef<(HTMLDivElement | null)[]>([]); // Array de refs para cada pista
-  const wavesurferRefs = useRef<(WaveSurfer | null)[]>([]); // Array de WaveSurfers para cada pista
+  const waveformRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const wavesurferRefs = useRef<(WaveSurfer | null)[]>([]);
 
+  // Cargar las pistas del servidor
   useEffect(() => {
     const fetchTracks = async () => {
       try {
         if (user) {
-          const user_id = user.sub; // Obtener el user_id del objeto `user` de Auth0
-
+          const user_id = user.sub;
           const response = await axios.get('http://localhost:8080/tracks', {
-            headers: {
-              user_id: user_id, // Incluir el user_id como encabezado
-              "Content-Type": "application/json",  // Asegúrate de establecer el tipo de contenido
-            }
+            headers: { user_id, 'Content-Type': 'application/json' },
           });
 
-          console.log('RESPONMSE', response);
           setUploadedTracks(response.data.map((track: any) => ({
             file_url: track.file_url,
             trackName: `${track.artist} - ${track.title}`,
-            demo_id: track.demo_id
+            demo_id: track.demo_id,
           })));
 
           setIsPlaying(new Array(response.data.length).fill(false));
@@ -48,18 +46,22 @@ const UploadedTracks = () => {
         console.error('Error fetching tracks:', error);
       }
     };
-
     fetchTracks();
   }, [user]);
 
+  // Inicializar WaveSurfer y evitar duplicados
   useEffect(() => {
     uploadedTracks.slice(0, loadedTracks).forEach((track, index) => {
+      if (waveformRefs.current[index] && wavesurferRefs.current[index]) {
+        wavesurferRefs.current[index]?.destroy();
+        wavesurferRefs.current[index] = null;
+      }
+
       if (waveformRefs.current[index] && !wavesurferRefs.current[index]) {
-        // Crear un nuevo objeto WaveSurfer para cada pista
         wavesurferRefs.current[index] = WaveSurfer.create({
           container: waveformRefs.current[index],
-          waveColor: '#4A90E2', // Color de la onda
-          progressColor: '#50E3C2', // Color del progreso
+          waveColor: '#4A90E2',
+          progressColor: '#50E3C2',
           height: 80,
           barWidth: 2,
           normalize: true,
@@ -95,6 +97,13 @@ const UploadedTracks = () => {
       }
     });
   }, [uploadedTracks, loadedTracks]);
+
+  // Eliminar instancias al desmontar
+  useEffect(() => {
+    return () => {
+      wavesurferRefs.current.forEach((wave) => wave?.destroy());
+    };
+  }, []);
 
   const togglePlayPause = (index: number) => {
     if (wavesurferRefs.current[index]) {
@@ -145,7 +154,6 @@ const UploadedTracks = () => {
     setTrackToDelete(file_url);
     setOpenDialog(true);
   };
-  console.log('Uploaded Tracks:', uploadedTracks);
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -166,26 +174,50 @@ const UploadedTracks = () => {
     }
   };
 
+  const copyToClipboard = (demo_id: string) => {
+    const privateLink = `${window.location.origin}/demo/${demo_id}`;
+    navigator.clipboard.writeText(privateLink);
+    setOpenSnackbar(false);
+    setTimeout(() => setOpenSnackbar(true), 100);
+  };
+
   return (
     <div style={styles.container}>
-      <h3 style={styles.title}>Tracks by South Atoms</h3>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        TransitionComponent={(props) => <Slide {...props} direction="down" />}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity="success"
+          icon={<CheckCircleOutline fontSize="inherit" />}
+          sx={{ backgroundColor: '#4caf50', color: '#ffffff', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+        >
+          🎉 Link copied successfully!
+        </Alert>
+      </Snackbar>
+
+      <h3 style={styles.title}>Tracks by {user?.name}</h3>
       <ul style={styles.trackList}>
         {uploadedTracks.slice(0, loadedTracks).map((track, index) => (
-
           <li key={`${track.file_url}-${index}`} style={styles.trackItem}>
-            <Typography variant="h6" style={styles.trackName}>
-              <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>
-                {track.trackName}
-              </Link>
-            </Typography>
+            <div style={styles.trackHeader}>
+              <Typography variant="h6" style={styles.trackName}>
+                <Link to={`/demo/${track.demo_id}`} style={{ textDecoration: 'none', color: '#4A90E2' }}>{track.trackName}</Link>
+              </Typography>
+              <Tooltip title="Copy private link">
+                <IconButton onClick={() => copyToClipboard(track.demo_id)} style={styles.copyButton}>
+                  <ContentCopy fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </div>
             <div ref={(el) => (waveformRefs.current[index] = el)} style={styles.waveformContainer} />
             <div style={styles.controls}>
               <IconButton onClick={() => togglePlayPause(index)} style={styles.playPauseButton}>
-                {isPlaying[index] ? (
-                  <Pause fontSize="large" />
-                ) : (
-                  <PlayArrow fontSize="large" />
-                )}
+                {isPlaying[index] ? <Pause fontSize="large" /> : <PlayArrow fontSize="large" />}
               </IconButton>
               <IconButton onClick={() => stopPlayback(index)} style={styles.stopButton}>
                 <Stop fontSize="large" />
@@ -194,13 +226,7 @@ const UploadedTracks = () => {
                 {Math.floor(currentTime[index])}s / {Math.floor(duration[index])}s
               </Typography>
             </div>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => handleOpenDeleteDialog(track.file_url)}
-              startIcon={<Delete />}
-              style={styles.deleteButton}
-            >
+            <Button variant="outlined" color="error" onClick={() => handleOpenDeleteDialog(track.file_url)} startIcon={<Delete />} style={styles.deleteButton}>
               Delete
             </Button>
           </li>
@@ -213,7 +239,6 @@ const UploadedTracks = () => {
         </Button>
       )}
 
-      {/* Diálogo de confirmación de eliminación */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
@@ -232,10 +257,9 @@ const UploadedTracks = () => {
   );
 };
 
-// Estilos para la UI
 const styles = {
   container: {
-    backgroundColor: '#F5F7FA', // Fondo claro
+    backgroundColor: '#F5F7FA',
     padding: '20px',
     borderRadius: '8px',
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
@@ -257,7 +281,7 @@ const styles = {
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
   },
   trackName: {
-    color: '#4A90E2', // Azul vibrante
+    color: '#4A90E2',
   },
   waveformContainer: {
     marginBottom: '10px',
@@ -267,10 +291,10 @@ const styles = {
     alignItems: 'center',
   },
   playPauseButton: {
-    color: '#50E3C2', // Color del progreso
+    color: '#50E3C2',
   },
   stopButton: {
-    color: '#D0021B', // Rojo para el botón de stop
+    color: '#D0021B',
   },
   timeInfo: {
     marginLeft: '10px',
