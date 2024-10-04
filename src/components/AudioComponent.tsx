@@ -1,3 +1,4 @@
+import { useAuth0 } from "@auth0/auth0-react"; // Asegúrate de importar Auth0
 import { useState, useEffect } from 'react';
 import { Modal, Box, TextField, Button, CircularProgress } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
@@ -32,11 +33,12 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [audioUrl, setAudioUrl] = useState<string>(''); // URL del archivo subido
   const [demoUrl, setDemoUrl] = useState<string>(''); // URL única para compartir
-  const { demo_id } = useParams<{ demo_id: string }>(); // Obtener demo_id de la URL
-  const navigate = useNavigate(); // Usa useNavigate en lugar de history
+  const { demo_id } = useParams<{ demo_id: string }>();
+  const { user } = useAuth0(); // Obtener el objeto `user` de Auth0
+  const navigate = useNavigate();
 
+  // Verificar si hay un demo_id en la URL
   useEffect(() => {
-    // Si hay un demo_id en la URL, recuperar los detalles del demo desde el backend
     if (demo_id) {
       const fetchDemoDetails = async () => {
         try {
@@ -50,11 +52,9 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
           console.error('Error fetching demo details:', error);
         }
       };
-
       fetchDemoDetails();
     }
   }, [demo_id]);
-
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: { 'audio/*': [] },
@@ -69,27 +69,36 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
       return;
     }
 
+    if (!user) {
+      setUploadStatus('User not authenticated');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', selectedFile);
 
     setLoading(true);
     try {
-      // Enviar el archivo al backend
+      const user_id = user.sub; // Obtener el user_id del objeto `user` de Auth0
+
+      // Enviar el archivo al backend con el encabezado `user_id`
       const response = await axios.post(
         `http://localhost:8080/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'user_id': user_id // Incluir el user_id en los encabezados
+          },
         }
       );
 
-      // Obtener el demoId devuelto por el backend
       const demoId = response.data.demo_id;
-      const demoUrl = `${window.location.origin}/demo/${demoId}`; // Generamos el enlace único
+      const demoUrl = `${window.location.origin}/demo/${demoId}`;
 
-      setDemoUrl(demoUrl); // Almacenar el enlace del demo
+      setDemoUrl(demoUrl);
       setUploadStatus('File uploaded successfully!');
-      setAudioUrl(`http://localhost:8080${response.data.file_url}`); // Mostrar la previsualización del archivo
+      setAudioUrl(`http://localhost:8080${response.data.file_url}`);
 
       // Redirigir a la página con el demo_id en la URL
       navigate(`/demo/${demoId}`);

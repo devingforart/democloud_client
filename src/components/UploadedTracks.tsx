@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Button, IconButton, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { PlayArrow, Pause, Stop, Delete } from '@mui/icons-material';
 import WaveSurfer from 'wavesurfer.js';
+import { useAuth0 } from "@auth0/auth0-react";  // Asegúrate de importar Auth0
 
 const UploadedTracks = () => {
   const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string, demo_id: string }[]>([]);
@@ -13,6 +14,7 @@ const UploadedTracks = () => {
   const [duration, setDuration] = useState<number[]>([]); // Array de duraciones por pista
   const [openDialog, setOpenDialog] = useState<boolean>(false); // Estado del diálogo de eliminación
   const [trackToDelete, setTrackToDelete] = useState<string | null>(null); // Pista a eliminar
+  const { user } = useAuth0();  // Obtiene el usuario desde el contexto de Auth0
 
   const waveformRefs = useRef<(HTMLDivElement | null)[]>([]); // Array de refs para cada pista
   const wavesurferRefs = useRef<(WaveSurfer | null)[]>([]); // Array de WaveSurfers para cada pista
@@ -20,24 +22,34 @@ const UploadedTracks = () => {
   useEffect(() => {
     const fetchTracks = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/tracks');
-        console.log('RESPONMSE', response)
-        setUploadedTracks(response.data.map((track: any) => ({
-          file_url: track.file_url,
-          trackName: `${track.artist} - ${track.title}`,
-          demo_id: track.demo_id // Asegúrate de recibir el demo_id
-        })));
-        // Inicializar estados para cada pista
-        setIsPlaying(new Array(response.data.length).fill(false));
-        setCurrentTime(new Array(response.data.length).fill(0));
-        setDuration(new Array(response.data.length).fill(0));
+        if (user) {
+          const user_id = user.sub; // Obtener el user_id del objeto `user` de Auth0
+
+          const response = await axios.get('http://localhost:8080/tracks', {
+            headers: {
+              user_id: user_id, // Incluir el user_id como encabezado
+              "Content-Type": "application/json",  // Asegúrate de establecer el tipo de contenido
+            }
+          });
+
+          console.log('RESPONMSE', response);
+          setUploadedTracks(response.data.map((track: any) => ({
+            file_url: track.file_url,
+            trackName: `${track.artist} - ${track.title}`,
+            demo_id: track.demo_id
+          })));
+
+          setIsPlaying(new Array(response.data.length).fill(false));
+          setCurrentTime(new Array(response.data.length).fill(0));
+          setDuration(new Array(response.data.length).fill(0));
+        }
       } catch (error) {
         console.error('Error fetching tracks:', error);
       }
     };
 
     fetchTracks();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     uploadedTracks.slice(0, loadedTracks).forEach((track, index) => {
