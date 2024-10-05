@@ -54,6 +54,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
       fetchDemoDetails();
     }
   }, [demo_id]);
+  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: { 'audio/*': [] },
