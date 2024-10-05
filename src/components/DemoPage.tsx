@@ -39,11 +39,12 @@ const DemoPage = () => {
     if (track && waveformRef.current && !wavesurferRef.current) {
       wavesurferRef.current = WaveSurfer.create({
         container: waveformRef.current,
-        waveColor: '#4A90E2', // Misma configuración de color
+        waveColor: '#4A90E2',
         progressColor: '#50E3C2',
         height: 80,
         barWidth: 2,
         normalize: true,
+        backend: 'MediaElement',
       });
 
       wavesurferRef.current.load(track.file_url);
