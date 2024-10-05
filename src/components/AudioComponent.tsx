@@ -75,11 +75,8 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
     setLoading(true);
     try {
-      const user_id = user.sub; // Obtener el user_id del objeto `user` de Auth0
-
-      // Enviar el archivo al backend con el encabezado `user_id`
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
+        `https://devingfor.art/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
           headers: {
