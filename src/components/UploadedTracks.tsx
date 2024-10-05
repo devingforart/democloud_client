@@ -9,7 +9,7 @@ import { Alert } from '@mui/material';
 
 const UploadedTracks = () => {
   const [uploadedTracks, setUploadedTracks] = useState<{ file_url: string, trackName: string, demo_id: string }[]>([]);
-  const [loadedTracks, setLoadedTracks] = useState<number>(5); // Número máximo de pistas a cargar inicialmente
+  const [loadedTracks, setLoadedTracks] = useState<number>(5);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean[]>([]);
   const [currentTime, setCurrentTime] = useState<number[]>([]);
@@ -22,13 +22,11 @@ const UploadedTracks = () => {
   const waveformRefs = useRef<(HTMLDivElement | null)[]>([]);
   const wavesurferRefs = useRef<(WaveSurfer | null)[]>([]);
 
-  // Cargar las pistas del servidor
   useEffect(() => {
     const fetchTracks = async () => {
       try {
         if (user) {
-          const user_id = user.sub;
-          const response = await axios.get('https://devingfor.art/tracks', {
+          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/tracks`, {
             headers: { 'X-User-Id': user.sub, 'Content-Type': 'application/json' },
           });
           console.log('RESPONSE', response)
@@ -68,7 +66,7 @@ const UploadedTracks = () => {
           normalize: true,
         });
 
-        wavesurferRefs.current[index]?.load(`https://devingfor.art${track.file_url}`);
+        wavesurferRefs.current[index]?.load(`${import.meta.env.VITE_API_BASE_URL}${track.file_url}`);
 
         wavesurferRefs.current[index]?.on('ready', () => {
           const trackDuration = wavesurferRefs.current[index]?.getDuration() || 0;
@@ -165,7 +163,7 @@ const UploadedTracks = () => {
     if (trackToDelete) {
       try {
         const filename = trackToDelete.split('/').pop();
-        await axios.delete(`https://devingfor.art/audio/${filename}`);
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/audio/${filename}`);
         setUploadedTracks((prev) => prev.filter((track) => track.file_url !== trackToDelete));
       } catch (error) {
         console.error('Error deleting the file:', error);
@@ -174,6 +172,7 @@ const UploadedTracks = () => {
       }
     }
   };
+
 
   const copyToClipboard = (demo_id: string) => {
     const privateLink = `${window.location.origin}/demo/${demo_id}`;

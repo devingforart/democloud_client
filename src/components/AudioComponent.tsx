@@ -30,22 +30,20 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
   const [artist, setArtist] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
-  const [audioUrl, setAudioUrl] = useState<string>(''); // URL del archivo subido
-  const [demoUrl, setDemoUrl] = useState<string>(''); // URL única para compartir
+  const [audioUrl, setAudioUrl] = useState<string>('');
+  const [demoUrl, setDemoUrl] = useState<string>('');
   const { demo_id } = useParams<{ demo_id: string }>();
-  const { user } = useAuth0(); // Obtener el objeto `user` de Auth0
+  const { user } = useAuth0();
   const navigate = useNavigate();
-
-  // Verificar si hay un demo_id en la URL
   useEffect(() => {
     if (demo_id) {
       const fetchDemoDetails = async () => {
         try {
-          const response = await axios.get(`https://devingfor.art/demo_details/${demo_id}`);
+          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/demo_details/${demo_id}`);
           const track = response.data;
           setTitle(track.title);
           setArtist(track.artist);
-          setAudioUrl(`https://devingfor.art${track.file_url}`);
+          setAudioUrl(`${import.meta.env.VITE_API_BASE_URL}${track.file_url}`);
           setDemoUrl(`${window.location.origin}/demo/${demo_id}`);
         } catch (error) {
           console.error('Error fetching demo details:', error);
@@ -54,7 +52,6 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
       fetchDemoDetails();
     }
   }, [demo_id]);
-
   const { getRootProps, getInputProps } = useDropzone({
     accept: { 'audio/*': [] },
     onDrop: (acceptedFiles) => {
@@ -82,7 +79,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
       // Enviar el archivo al backend con el encabezado `user_id`
       const response = await axios.post(
-        `https://devingfor.art/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
+        `${import.meta.env.VITE_API_BASE_URL}/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
           headers: {
@@ -97,7 +94,7 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
       setDemoUrl(demoUrl);
       setUploadStatus('File uploaded successfully!');
-      setAudioUrl(`https://devingfor.art${response.data.file_url}`);
+      setAudioUrl(`${import.meta.env.VITE_API_BASE_URL}${response.data.file_url}`);
 
       // Redirigir a la página con el demo_id en la URL
       navigate(`/demo/${demoId}`);
