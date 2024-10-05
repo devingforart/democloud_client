@@ -85,8 +85,10 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
         `https://devingfor.art/upload?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`,
         formData,
         {
-          headers: { 'X-User-Id': user.sub, 'Content-Type': 'application/json' },
-
+          headers: {
+            'X-User-Id': user.sub,
+            'Content-Type': 'multipart/form-data', // Cambio importante aquí
+          },
         }
       );
 
@@ -99,12 +101,14 @@ const AudioComponent = ({ openModal, handleCloseModal }: AudioComponentProps) =>
 
       // Redirigir a la página con el demo_id en la URL
       navigate(`/demo/${demoId}`);
+
+      // Solo cerrar el modal si la subida es exitosa
+      handleCloseModal();
     } catch (error) {
       console.error('Error uploading the file:', error);
       setUploadStatus('File upload failed. Please check the server logs.');
     } finally {
       setLoading(false);
-      handleCloseModal();
     }
   };
 
